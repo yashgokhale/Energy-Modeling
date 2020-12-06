@@ -1,0 +1,126 @@
+---
+title: "Analysis and Modeling of US Pollution Data for '1980-2018'
+and its implications on the atmosphere"
+author: "Yash Gokhale (ysg)"
+output: pdf_document
+
+---
+Importing datasets
+
+```{r}
+setwd("C:\\Users\\yashg\\OneDrive\\Desktop\\CMU\\Fall 2019\\Data Science\\Project\\")
+library(readxl)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+
+data<-read_csv('combined.csv')
+```
+Simple Regression Model for Temperature and %RH
+The first regression model taken into account is the Simple Linear Regression Model for Temperature and %RH. 
+```{r}
+#Basic regression model
+#Comparing temperature with concentrations
+simplemodel_T<-lm(Avg_T~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2,data=data)
+summary(simplemodel_T)
+```
+The results of the Temperature model give out coeffs for the pollutants.
+```{r}
+
+#Comparing RH with concentrations
+simplemodel_RH<-lm(Avg_RH~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2,data=data)
+summary(simplemodel_RH)
+```
+#Adding year and month
+```{r}
+#Basic regression model
+#Comparing temperature with concentrations
+simplemodel2_T<-lm(Avg_T~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2+Year+Month,data=data)
+summary(simplemodel2_T)
+```
+#Adding year and month
+For RH
+```{r}
+#Basic regression model
+#Comparing temperature with concentrations
+simplemodel2_RH<-lm(Avg_RH~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2+Year+Month+State_Name,data=data)
+summary(simplemodel2_RH)
+write.csv( tidy(simplemodel2_RH) , "coefs2.csv" )
+```
+
+We can see that the inclusion of Year and Month(as a categorical variable improves the model and the equivalent R-squared)
+
+```{r}
+library(broom)
+simplemodel3_T<-lm(Avg_T~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2+Year+Month+State_Name,data=data)
+summary(simplemodel3_T)
+write.csv( tidy(simplemodel3_T) , "coefs.csv" )
+```
+In order to find general trends, averaged over pollution:
+```{r}
+data_f<-data%>%
+  group_by(State_Name)%>%
+  group_by(City_Name)%>%
+  group_by(Year)%>%
+  mutate(avgS=mean(Avg_SO2),
+         avgCO=mean(Avg_CO),
+         avgO3=mean(Avg_O3),
+         avgNO2=mean(Avg_NO2),
+         avgT=mean(Avg_T),
+         avgRH=mean(Avg_RH)
+  )
+#1
+`ggplot()+
+  geom_line(mapping=aes(x=Year,y=avgRH),data=data_f,color='red')`+
+  xlab("Years")+
+  ylab("Relative Humidity")+
+  ggtitle("Fluctuation of RH over years")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+Sample analysis:
+a <- ggplot(wdata, aes(x = weight))
+```{r}
+data_2<-data %>%
+  mutate(n_tot=num_x+num_x_1+num_y_1+num_x_2+num_y_2)
+ggplot()+
+  geom_histogram(mapping=aes(num_x_2),data=data_2,bins=30)+
+  xlab("Samples of SO2")+
+  ylab("Count")+
+  ggtitle("Histogram of SO2 samples")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Level-Log Model:
+```{r}
+levellog_T<-lm(log(Avg_T)~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2+Year+Month+State_Name,data=data)
+summary(levellog_T)
+write.csv( tidy(levellog_T) , "coefs3.csv" )
+```
+.
+```{r}
+levellog_RH<-lm(log(Avg_RH)~Avg_CO+Avg_NO2+Avg_O3+Avg_SO2+Year+Month+State_Name,data=data)
+summary(levellog_RH)
+write.csv( tidy(levellog_RH) , "levellogrh.csv" )
+```
+#write.csv( tidy(levellog_RH) , "levellogrh.csv" )
+.
+```{r}
+
+loglog_RH<-lm(log(Avg_RH+0.0001)~log(Avg_CO+0.0001)+log(Avg_NO2+0.0001)+log(Avg_O3+0.0001)+log(Avg_SO2+0.0001)+log(Year)+Month+State_Name,data=data)
+summary(loglog_RH)
+```
+
+```{r}
+
+bc <- boxcox(levellog_T,
+data = data,
+family = "yjPower")
+```
+Fitting samples
+```{r}
+s4<-lm(num_x_2~State_Name,data=data_f)
+write.csv( tidy(s4) , "pollutant4.csv" )
+```
+
